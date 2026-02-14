@@ -199,6 +199,11 @@ a {
   padding-right: 30px;
 }
 
+.select option {
+  background: #232220;
+  color: #ede8df;
+}
+
 .color {
   width: 100%;
   height: 42px;
