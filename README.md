@@ -66,3 +66,7 @@ npm run dev
 - "Voice Unsupported": use Auto-Scroll mode, or switch to Chrome/Edge.
 - "It's still running old code": hard refresh (`Ctrl+Shift+R`) or open an incognito window (service worker caching).
 - Remote won't connect: make sure you opened a LAN IP URL (not `localhost`) and the phone is on the same Wi-Fi.
+
+## License
+
+MIT. See `LICENSE`.

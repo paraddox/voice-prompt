@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Local, privacy-first voice-tracking teleprompter with optional phone remote.",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "engines": {
     "node": ">=18"
   },
@@ -18,4 +18,3 @@
     "ws": "^8.18.3"
   }
 }
-

@@ -60,8 +60,8 @@ const defaultState = {
     readingLine: "upper",
     mirror: false,
     lightDisplay: false,
-    bgColor: "#0b0b0c",
-    textColor: "#f5f1e8",
+    bgColor: "#111110",
+    textColor: "#ede8df",
     countdown: true
   }
 };

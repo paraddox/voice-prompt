@@ -1,4 +1,4 @@
-const CACHE = "voice-prompter-v2";
+const CACHE = "voice-prompter-v3";
 const CORE = [
   "/",
   "/app",
