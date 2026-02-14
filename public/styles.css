@@ -288,8 +288,7 @@ a {
 .brand__mark {
   width: 18px;
   height: 18px;
-  border-radius: 5px;
-  background: linear-gradient(135deg, #d4593a, #c4956a);
+  border-radius: 4px;
 }
 
 .brand__name {

@@ -1,4 +1,4 @@
-const CACHE = "voice-prompter-v3";
+const CACHE = "voice-prompter-v4";
 const CORE = [
   "/",
   "/app",
@@ -11,6 +11,7 @@ const CORE = [
   "/remote.html",
   "/vendor/qrcode.js",
   "/manifest.webmanifest",
+  "/icon.svg",
   "/icon-192.png",
   "/icon-512.png"
 ];
