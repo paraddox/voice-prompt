@@ -111,12 +111,92 @@ const el = {
 let recognition = null;
 let voiceShouldRun = false;
 let voiceRestartTimer = null;
+let lastInterimText = "";
 
 // ---- Prompter parsing ----
 let wordEls = [];
 let wordNorms = [];
 let sentenceStarts = [0];
 let currentIndex = 0;
+let committedIndex = 0;
+
+// ---- Scheduling (reduce per-word work) ----
+let scrollRaf = 0;
+let broadcastTimer = null;
+let remoteSyncTimer = null;
+
+function scheduleScroll() {
+  if (scrollRaf) return;
+  scrollRaf = requestAnimationFrame(() => {
+    scrollRaf = 0;
+    scrollToWord(currentIndex);
+  });
+}
+
+function scheduleBroadcast() {
+  clearTimeout(broadcastTimer);
+  broadcastTimer = setTimeout(() => {
+    broadcastTimer = null;
+    broadcastState();
+  }, 80);
+}
+
+function scheduleRemoteSync() {
+  clearTimeout(remoteSyncTimer);
+  remoteSyncTimer = setTimeout(() => {
+    remoteSyncTimer = null;
+    syncToRemotes();
+  }, 120);
+}
+
+const COMMON_WORDS = new Set([
+  "a",
+  "an",
+  "the",
+  "and",
+  "or",
+  "but",
+  "to",
+  "of",
+  "in",
+  "on",
+  "for",
+  "with",
+  "as",
+  "at",
+  "by",
+  "from",
+  "is",
+  "are",
+  "was",
+  "were",
+  "be",
+  "been",
+  "being",
+  "it",
+  "this",
+  "that",
+  "these",
+  "those",
+  "i",
+  "you",
+  "we",
+  "they",
+  "he",
+  "she",
+  "my",
+  "your",
+  "our",
+  "their",
+  "his",
+  "her"
+]);
+
+function isWeakWord(w) {
+  if (!w) return true;
+  if (w.length <= 3) return true;
+  return COMMON_WORDS.has(w);
+}
 
 function setStatus(text) {
   el.statusLine.textContent = text;
@@ -211,20 +291,22 @@ function scrollToWord(index) {
   el.prompter.scrollTop = clamp(target, 0, el.prompter.scrollHeight);
 }
 
-function setPosition(next, { scroll = true } = {}) {
+function setPosition(next, { scroll = true, persist = true, commit = true } = {}) {
   const clamped = clamp(next, 0, wordEls.length);
   updateHighlight(currentIndex, clamped);
   currentIndex = clamped;
   state.position = clamped;
-  if (scroll) scrollToWord(currentIndex);
-  saveDebounced();
-  syncToRemotes();
-  broadcastState();
+  if (commit) committedIndex = clamped;
+  if (scroll) scheduleScroll();
+  if (persist) saveDebounced();
+  scheduleRemoteSync();
+  scheduleBroadcast();
 }
 
 function resetPrompter() {
   for (const w of wordEls) w.classList.remove("done", "current");
   currentIndex = 0;
+  committedIndex = 0;
   state.position = 0;
   if (wordEls[0]) wordEls[0].classList.add("current");
   el.prompter.scrollTop = 0;
@@ -250,37 +332,53 @@ function prevSentenceIndex(from) {
   return prev;
 }
 
-function advanceFromTranscript(transcript) {
+function advancePositionFromTranscript(
+  transcript,
+  startPos,
+  { lookahead = 12, allowLookahead = true, allowFuzzy = true, allowFuzzyAhead = true } = {}
+) {
   const spoken = splitSpokenWords(transcript);
-  if (!spoken.length || !wordNorms.length) return;
+  if (!spoken.length || !wordNorms.length) return clamp(startPos, 0, wordNorms.length);
 
-  let pos = currentIndex;
-  const lookahead = 32;
+  let pos = clamp(startPos, 0, wordNorms.length);
 
-  for (const w of spoken) {
+  for (let idx = 0; idx < spoken.length; idx++) {
+    const w = spoken[idx];
     if (!w) continue;
     if (pos >= wordNorms.length) break;
 
-    // Direct match.
-    if (w === wordNorms[pos]) {
+    const sw0 = wordNorms[pos];
+    const weak = isWeakWord(w);
+
+    // Direct (or fuzzy) match at current position.
+    if (w === sw0) {
       pos += 1;
       continue;
     }
 
-    // Look ahead for exact match.
+    if (allowFuzzy && !weak && sw0 && sw0[0] === w[0]) {
+      const maxDist = w.length <= 5 ? 1 : 2;
+      if (levenshteinWithin(w, sw0, maxDist)) {
+        pos += 1;
+        continue;
+      }
+    }
+
+    if (!allowLookahead) continue;
+
+    // Look ahead for exact (and optionally fuzzy) match.
+    const maxAhead = weak ? Math.min(2, lookahead) : lookahead;
+    const end = Math.min(wordNorms.length - 1, pos + maxAhead);
     let found = -1;
-    const end = Math.min(wordNorms.length - 1, pos + lookahead);
     for (let j = pos + 1; j <= end; j++) {
       if (w === wordNorms[j]) {
         found = j;
         break;
       }
     }
-
-    // Small fuzzy match if no exact match.
-    if (found === -1 && w.length >= 3) {
+    if (found === -1 && allowFuzzyAhead && !weak && w.length >= 4) {
       const maxDist = w.length <= 5 ? 1 : 2;
-      for (let j = pos; j <= end; j++) {
+      for (let j = pos + 1; j <= end; j++) {
         const sw = wordNorms[j];
         if (!sw) continue;
         if (sw[0] !== w[0]) continue;
@@ -291,10 +389,30 @@ function advanceFromTranscript(transcript) {
       }
     }
 
-    if (found !== -1) pos = found + 1;
+    if (found === -1) continue;
+
+    // If it's a big jump, require a second word to agree to avoid false matches on common tokens.
+    const jump = found - pos;
+    if (jump >= 4) {
+      const w2 = spoken[idx + 1];
+      if (w2) {
+        const s1 = wordNorms[found + 1];
+        const s2 = wordNorms[found + 2];
+        const ok =
+          w2 === s1 ||
+          w2 === s2 ||
+          (!isWeakWord(w2) &&
+            s1 &&
+            s1[0] === w2[0] &&
+            levenshteinWithin(w2, s1, w2.length <= 5 ? 1 : 2));
+        if (!ok) continue;
+      }
+    }
+
+    pos = found + 1;
   }
 
-  if (pos !== currentIndex) setPosition(pos);
+  return pos;
 }
 
 function ensureRecognition() {
@@ -305,14 +423,45 @@ function ensureRecognition() {
   recognition = new SR();
   recognition.continuous = true;
   recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
 
   recognition.onresult = (event) => {
     let finalText = "";
+    let interimText = "";
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const res = event.results[i];
-      if (res.isFinal && res[0]?.transcript) finalText += `${res[0].transcript} `;
+      const t = res[0]?.transcript;
+      if (!t) continue;
+      if (res.isFinal) finalText += `${t} `;
+      else interimText += `${t} `;
     }
-    if (finalText.trim()) advanceFromTranscript(finalText);
+
+    // Low-latency preview: use interim results to advance display, but don't commit.
+    const it = interimText.trim();
+    if (it && it !== lastInterimText) {
+      lastInterimText = it;
+      const previewPos = advancePositionFromTranscript(it, committedIndex, {
+        lookahead: 6,
+        allowLookahead: true,
+        allowFuzzy: true,
+        allowFuzzyAhead: false
+      });
+      if (previewPos > currentIndex) setPosition(previewPos, { persist: false, commit: false });
+    }
+
+    // Commit on final results.
+    const ft = finalText.trim();
+    if (ft) {
+      const nextCommitted = advancePositionFromTranscript(ft, committedIndex, {
+        lookahead: 14,
+        allowLookahead: true,
+        allowFuzzy: true,
+        allowFuzzyAhead: true
+      });
+      if (nextCommitted !== committedIndex) {
+        setPosition(nextCommitted, { persist: true, commit: true });
+      }
+    }
   };
 
   recognition.onerror = (e) => {
@@ -384,6 +533,7 @@ async function start() {
       return;
     }
     voiceShouldRun = true;
+    committedIndex = currentIndex;
     try {
       r.lang = state.settings.language;
       r.start();
@@ -417,6 +567,8 @@ function stop() {
     } catch {
       // noop
     }
+    committedIndex = currentIndex;
+    saveDebounced();
     setStatus("Stopped.");
   } else {
     cancelAnimationFrame(autoRaf);

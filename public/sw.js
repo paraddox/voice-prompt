@@ -1,4 +1,4 @@
-const CACHE = "voice-prompter-v1";
+const CACHE = "voice-prompter-v2";
 const CORE = [
   "/",
   "/app",
@@ -40,16 +40,16 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     (async () => {
       const cache = await caches.open(CACHE);
-      const cached = await cache.match(req);
-      if (cached) return cached;
       try {
         const res = await fetch(req);
         if (res && res.ok) cache.put(req, res.clone());
         return res;
       } catch {
+        const cached = await cache.match(req);
+        if (cached) return cached;
         // Offline fallback: if it's a navigation, serve the app shell.
         if (req.mode === "navigate") return cache.match("/app");
-        return cached;
+        throw new Error("Offline and not cached");
       }
     })()
   );

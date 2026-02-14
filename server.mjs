@@ -49,6 +49,12 @@ app.use(express.static(path.join(__dirname, "public"), { fallthrough: true }));
 
 // ---- WebSocket relay for phone remotes ----
 const wss = new WebSocketServer({ server, path: "/ws" });
+wss.on("error", (err) => {
+  // When probing ports, server listen errors can bubble here as well. Avoid crashing.
+  if (err && (err.code === "EADDRINUSE" || err.code === "EACCES")) return;
+  // eslint-disable-next-line no-console
+  console.error("WebSocketServer error:", err);
+});
 
 /**
  * sessions: id -> { host: WebSocket, remotes: Set<WebSocket>, lastState: any }
