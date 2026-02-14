@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voice Prompter (Local)</title>
+    <meta name="description" content="Privacy-first teleprompter that can follow your voice in real time." />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="page">
+    <main class="landing">
+      <header class="landing__header">
+        <div class="brand">
+          <div class="brand__mark" aria-hidden="true"></div>
+          <div class="brand__name">Voice Prompter</div>
+        </div>
+        <a class="btn btn--primary" href="/app">Launch App</a>
+      </header>
+
+      <section class="hero">
+        <h1 class="hero__title">A teleprompter that tracks your voice.</h1>
+        <p class="hero__subtitle">
+          Paste a script. Hit Start. The prompter advances as you speak. Your script stays on this device. Voice
+          tracking uses your browser's Speech Recognition (Chrome may process audio online).
+        </p>
+        <div class="hero__cta">
+          <a class="btn btn--primary" href="/app">Open Teleprompter</a>
+          <a class="btn" href="#how">How It Works</a>
+        </div>
+      </section>
+
+      <section class="cards" id="how">
+        <article class="card">
+          <h2 class="card__title">Voice Tracking</h2>
+          <p class="card__body">Uses your browser's Speech Recognition to keep your place word-by-word.</p>
+        </article>
+        <article class="card">
+          <h2 class="card__title">Auto-Scroll Mode</h2>
+          <p class="card__body">Prefer a fixed pace? Switch to auto-scroll and set your speed.</p>
+        </article>
+        <article class="card">
+          <h2 class="card__title">Phone Remote</h2>
+          <p class="card__body">Control Start/Stop, nudges, and speed from a second device on your Wi-Fi.</p>
+        </article>
+        <article class="card">
+          <h2 class="card__title">Mirror + Pop-Out</h2>
+          <p class="card__body">Flip the display for mirror rigs and pop the prompter into its own window.</p>
+        </article>
+      </section>
+
+      <footer class="footnote">
+        <p>
+          Speech Recognition support is best in Chrome / Edge. Safari and Firefox may not support voice tracking.
+        </p>
+      </footer>
+    </main>
+    <script type="module">
+      if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+    </script>
+  </body>
+</html>

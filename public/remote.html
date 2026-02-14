@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Phone Remote</title>
+    <meta name="description" content="Remote control for Voice Prompter." />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="page remotePage" data-theme="dark">
+    <main class="remoteShell">
+      <header class="remoteHeader">
+        <div class="remoteHeader__title">Voice Prompter Remote</div>
+        <div class="pill" id="connPill">Connecting...</div>
+      </header>
+
+      <section class="remoteGrid">
+        <button class="remoteBtn remoteBtn--primary" id="startStopBtn" type="button">Start / Stop</button>
+        <button class="remoteBtn" id="resetBtn" type="button">Reset</button>
+        <button class="remoteBtn" id="prevWordBtn" type="button">&lt; Word</button>
+        <button class="remoteBtn" id="nextWordBtn" type="button">Word &gt;</button>
+        <button class="remoteBtn" id="prevSentBtn" type="button">&lt; Sentence</button>
+        <button class="remoteBtn" id="nextSentBtn" type="button">Sentence &gt;</button>
+        <button class="remoteBtn" id="slowerBtn" type="button">Slower</button>
+        <button class="remoteBtn" id="fasterBtn" type="button">Faster</button>
+      </section>
+
+      <section class="remoteInfo">
+        <div class="remoteInfo__row">
+          <div class="remoteInfo__label">Session</div>
+          <div class="mono" id="sessionId">-</div>
+        </div>
+        <div class="remoteInfo__row">
+          <div class="remoteInfo__label">Status</div>
+          <div id="statusText">-</div>
+        </div>
+        <div class="remoteInfo__row">
+          <div class="remoteInfo__label">Mode</div>
+          <div id="modeText">-</div>
+        </div>
+      </section>
+
+      <footer class="footnote">
+        <p>If you lose connection, refresh this page. Keep your phone awake while recording.</p>
+      </footer>
+    </main>
+
+    <script type="module" src="/js/remote.js"></script>
+  </body>
+</html>

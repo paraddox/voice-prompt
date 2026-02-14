@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prompter View</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="page prompterPage" data-theme="dark">
+    <main class="prompterOnly">
+      <div class="readingLine" id="readingLineOverlay" aria-hidden="true"></div>
+      <div id="prompter" class="prompter prompter--solo" tabindex="0"></div>
+      <div class="floatingHud" id="hud">
+        <div class="floatingHud__title">Prompter</div>
+        <div class="floatingHud__row">
+          <button class="btn btn--small btn--primary" id="startStopBtn" type="button">Start/Stop</button>
+          <button class="btn btn--small" id="resetBtn" type="button">Reset</button>
+        </div>
+        <div class="floatingHud__hint">This view mirrors the main window.</div>
+      </div>
+    </main>
+    <script type="module" src="/js/prompter.js"></script>
+  </body>
+</html>
+

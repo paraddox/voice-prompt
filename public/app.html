@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voice Prompter</title>
+    <meta name="description" content="Voice-tracking teleprompter with optional phone remote." />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="page app" data-theme="dark">
+    <div class="appShell">
+      <aside class="panel">
+        <header class="panel__header">
+          <div class="brand brand--compact">
+            <div class="brand__mark" aria-hidden="true"></div>
+            <div class="brand__name">Voice Prompter</div>
+          </div>
+          <div class="badge" id="supportBadge" title="Speech Recognition support">
+            Checking...
+          </div>
+        </header>
+
+        <section class="block">
+          <div class="block__title">Script</div>
+          <textarea id="scriptInput" class="textarea" spellcheck="false"></textarea>
+          <div class="row">
+            <label class="btn btn--small">
+              Load File
+              <input id="fileInput" type="file" accept=".txt,.md,.rtf,.doc,.docx" hidden />
+            </label>
+            <button class="btn btn--small" id="pasteBtn" type="button">Paste</button>
+            <button class="btn btn--small btn--danger" id="clearBtn" type="button">Clear</button>
+          </div>
+          <div class="hint">
+            Shortcuts: <span class="kbd">Space</span> Start/Stop, <span class="kbd">Left</span>/<span class="kbd">Right</span>
+            nudge word, <span class="kbd">PgUp</span>/<span class="kbd">PgDn</span> jump sentence.
+          </div>
+        </section>
+
+        <section class="block">
+          <div class="block__title">Controls</div>
+          <div class="grid2">
+            <label class="field">
+              <div class="field__label">Font Size</div>
+              <input id="fontSize" type="range" min="18" max="120" step="1" />
+            </label>
+            <label class="field">
+              <div class="field__label">Font</div>
+              <select id="fontFamily" class="select">
+                <option value="system">System</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Palatino">Palatino</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Arial">Arial</option>
+                <option value="Monospace">Monospace</option>
+              </select>
+            </label>
+            <label class="field">
+              <div class="field__label">Language</div>
+              <select id="language" class="select"></select>
+            </label>
+            <label class="field">
+              <div class="field__label">Scroll Mode</div>
+              <select id="mode" class="select">
+                <option value="voice">Voice Tracking</option>
+                <option value="auto">Auto-Scroll (Fixed Speed)</option>
+              </select>
+            </label>
+            <label class="field">
+              <div class="field__label">Scroll Speed</div>
+              <input id="scrollSpeed" type="range" min="0" max="160" step="1" />
+            </label>
+            <label class="field">
+              <div class="field__label">Text Width</div>
+              <input id="textWidth" type="range" min="45" max="100" step="1" />
+            </label>
+            <label class="field">
+              <div class="field__label">Reading Line</div>
+              <select id="readingLine" class="select">
+                <option value="upper">Upper</option>
+                <option value="middle">Middle</option>
+                <option value="lower">Lower</option>
+              </select>
+            </label>
+            <label class="field">
+              <div class="field__label">Countdown</div>
+              <input id="countdown" type="checkbox" class="toggle" />
+            </label>
+            <label class="field">
+              <div class="field__label">Mirror Mode</div>
+              <input id="mirror" type="checkbox" class="toggle" />
+            </label>
+            <label class="field">
+              <div class="field__label">Light Display</div>
+              <input id="lightDisplay" type="checkbox" class="toggle" />
+            </label>
+            <label class="field">
+              <div class="field__label">Background</div>
+              <input id="bgColor" type="color" class="color" />
+            </label>
+            <label class="field">
+              <div class="field__label">Text</div>
+              <input id="textColor" type="color" class="color" />
+            </label>
+          </div>
+        </section>
+
+        <section class="block">
+          <div class="block__title">Remote</div>
+          <div class="row">
+            <button class="btn btn--small" id="remoteBtn" type="button">Open Remote</button>
+            <div class="pill" id="remoteStatus">Not connected</div>
+          </div>
+          <div class="hint">Remote works best when your phone is on the same Wi-Fi as this computer.</div>
+        </section>
+      </aside>
+
+      <main class="stage">
+        <div class="topbar">
+          <div class="statusLine" id="statusLine">Ready.</div>
+          <div class="row">
+            <button class="btn btn--primary" id="startStopBtn" type="button">Start</button>
+            <button class="btn" id="resetBtn" type="button">Reset</button>
+            <button class="btn" id="popoutBtn" type="button">Pop Out</button>
+          </div>
+        </div>
+
+        <section class="prompterWrap">
+          <div class="readingLine" id="readingLineOverlay" aria-hidden="true"></div>
+          <div id="prompter" class="prompter" tabindex="0"></div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal" id="remoteModal" aria-hidden="true">
+      <div class="modal__backdrop" data-close="1"></div>
+      <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="remoteTitle">
+        <div class="modal__header">
+          <div>
+            <div class="modal__title" id="remoteTitle">Phone Remote</div>
+            <div class="modal__subtitle">Scan the QR code or open a link on your phone.</div>
+          </div>
+          <button class="iconBtn" type="button" data-close="1" aria-label="Close">
+            x
+          </button>
+        </div>
+        <div class="modal__body">
+          <div class="qrShell">
+            <div class="qr" id="qr"></div>
+            <div class="qrMeta">
+              <div class="field">
+                <div class="field__label">Session</div>
+                <div class="mono" id="sessionId">-</div>
+              </div>
+              <div class="field">
+                <div class="field__label">Remote URL</div>
+                <input id="remoteUrl" class="input mono" readonly />
+              </div>
+              <div class="row">
+                <button class="btn btn--small" id="copyRemoteUrlBtn" type="button">Copy Link</button>
+                <button class="btn btn--small" id="refreshRemoteUrlBtn" type="button">Try Another LAN IP</button>
+              </div>
+              <div class="hint" id="remoteHint">
+                If this shows <span class="mono">localhost</span>, your phone won't be able to open it. Use a LAN IP link.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="countdown" id="countdownOverlay" aria-hidden="true">
+      <div class="countdown__num" id="countdownNum">3</div>
+    </div>
+
+    <script src="/vendor/qrcode.js"></script>
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>
