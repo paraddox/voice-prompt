@@ -2,6 +2,8 @@
 
 Local, privacy-first teleprompter that can follow your voice (Speech Recognition) and optionally accept commands from a phone remote on the same Wi-Fi.
 
+![Voice Prompter UI](docs/screenshot.png)
+
 ## What You Get
 
 - Voice tracking: highlights/advances words as you speak (low-latency with interim results).
